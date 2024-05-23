@@ -1,244 +1,196 @@
-//
-// Source code recreated from a .class file by IntelliJ IDEA
-// (powered by FernFlower decompiler)
-//
-
 package service;
 
 import exception.CourseNotFoundException;
 import exception.InstructorValidatorException;
 import exception.RequirementValidatorException;
 import exception.TitleValidatorException;
-import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.InputMismatchException;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Random;
-import java.util.Scanner;
+
+import java.util.*;
 import model.Course;
 import org.nocrala.tools.texttablefmt.BorderStyle;
+import org.nocrala.tools.texttablefmt.CellStyle;
 import org.nocrala.tools.texttablefmt.ShownBorders;
 import org.nocrala.tools.texttablefmt.Table;
 import repository.CourseRepository;
 
 public class CourseServiceImp implements CourseService {
+
+    private static final Scanner scanner = new Scanner(System.in);
+
+    @Override
     public void addAllCourses() {
-        Scanner scanner = new Scanner(System.in);
         String[] title = null;
         String[] instructorName = null;
         String[] requirement = null;
+        Date startDate = new Date();
 
-        while(true) {
+        while (true) {
             try {
-                String requirementInput;
                 if (title == null) {
-                    System.out.println("=".repeat(30));
-                    System.out.print("[+] Insert course title: ");
-                    requirementInput = scanner.nextLine();
-                    if (requirementInput.isEmpty() || requirementInput.matches(".*\\d.*")) {
-                        throw new TitleValidatorException("[!] Invalid title. Please enter a valid text without numbers.");
-                    }
-
-                    title = new String[]{requirementInput};
+                    title = new String[]{getInput("Insert course title", new TitleValidatorException("[!] Invalid title. Please enter a valid text without numbers."))};
                 }
 
                 if (instructorName == null) {
-                    System.out.print("[+] Insert course instructor name: ");
-                    requirementInput = scanner.nextLine();
-                    if (requirementInput.isEmpty() || requirementInput.matches(".*\\d.*")) {
-                        throw new InstructorValidatorException("[!] Invalid instructor name. Please enter a valid text without numbers.");
-                    }
-
-                    instructorName = new String[]{requirementInput};
+                    instructorName = new String[]{getInput("Insert course instructor name", new InstructorValidatorException("[!] Invalid instructor name. Please enter a valid text without numbers."))};
                 }
 
                 if (requirement == null) {
-                    System.out.print("[+] Insert course requirement: ");
-                    requirementInput = scanner.nextLine();
-                    if (requirementInput.isEmpty() || requirementInput.matches(".*\\d.*")) {
-                        throw new RequirementValidatorException("[!] Invalid requirement. Please enter a valid text without numbers.");
-                    }
-
-                    requirement = new String[]{requirementInput};
+                    requirement = new String[]{getInput("Insert course requirement", new RequirementValidatorException("[!] Invalid requirement. Please enter a valid text without numbers."))};
                 }
 
-                Course course = new Course((new Random()).nextInt(100), title, instructorName, requirement, LocalDate.of(2024, 3, 3).toString());
+                Course course = new Course(new Random().nextInt(100), title, instructorName, requirement, startDate.toString());
                 CourseRepository.addCourse(course);
                 System.out.println("[+] Course added successfully!");
                 return;
-            } catch (InstructorValidatorException | RequirementValidatorException | TitleValidatorException var6) {
-                System.out.println(var6.getMessage());
+
+            } catch (TitleValidatorException | InstructorValidatorException | RequirementValidatorException e) {
+                System.out.println(e.getMessage());
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
         }
     }
 
+    private String getInput(String prompt, Exception exception) throws Exception {
+        System.out.print("[+] " + prompt + ": ");
+        String input = scanner.nextLine();
+        if (input.isEmpty() || input.matches(".*\\d.*")) {
+            throw exception;
+        }
+        return input;
+    }
+
+    @Override
     public void getAllCourses() {
         List<Course> courses = CourseRepository.allCourses();
-        Table table = new Table(5, BorderStyle.UNICODE_BOX_DOUBLE_BORDER_WIDE, ShownBorders.ALL);
-        table.addCell("ID");
-        table.addCell("TITLE");
-        table.addCell("INSTRUCTOR");
-        table.addCell("REQUIREMENT");
-        table.addCell("START DATE");
-        table.setColumnWidth(0, 10, 30);
-        table.setColumnWidth(1, 25, 60);
-        table.setColumnWidth(2, 25, 60);
-        table.setColumnWidth(3, 30, 60);
-        table.setColumnWidth(4, 15, 15);
-        if (courses.isEmpty()) {
-            table.addCell("N/A", 5);
-            table.addCell("No courses available.", 5);
-        } else {
-            Iterator var3 = courses.iterator();
+        Table table = createTable();
+        CellStyle cellStyle = new CellStyle(CellStyle.HorizontalAlign.CENTER);
 
-            while(var3.hasNext()) {
-                Course course = (Course)var3.next();
-                table.addCell(course.getId().toString());
-                table.addCell(String.join(", ", course.getTitle()));
-                table.addCell(String.join(", ", course.getInstructorName()));
-                table.addCell(String.join(", ", course.getRequirement()));
-                table.addCell(course.getStartDate());
+        if (courses.isEmpty()) {
+            table.addCell("N/A", cellStyle);
+            table.addCell("No courses available.", cellStyle);
+        } else {
+            for (Course course : courses) {
+                addCourseToTable(table, course, cellStyle);
             }
         }
 
         System.out.println(table.render());
     }
 
+    @Override
     public void findCourseById() throws CourseNotFoundException {
         List<Course> courses = CourseRepository.allCourses();
-        Scanner scanner = new Scanner(System.in);
 
-        while(true) {
-            System.out.print("[+] Input Id For Search: ");
+        System.out.print("[+] Input Id For Search: ");
+        try {
+            int fId = scanner.nextInt();
+            Course course = courses.stream()
+                    .filter(c -> c.getId() == fId)
+                    .findFirst()
+                    .orElseThrow(() -> new CourseNotFoundException("[!] Course not found with id: " + fId));
 
-            try {
-                int fId = scanner.nextInt();
-                boolean found = false;
-                Table table = new Table(5, BorderStyle.UNICODE_BOX_DOUBLE_BORDER_WIDE, ShownBorders.ALL);
-                table.addCell("ID");
-                table.addCell("TITLE");
-                table.addCell("INSTRUCTOR");
-                table.addCell("REQUIREMENT");
-                table.addCell("START DATE");
-                table.setColumnWidth(0, 10, 30);
-                table.setColumnWidth(1, 25, 60);
-                table.setColumnWidth(2, 25, 60);
-                table.setColumnWidth(3, 30, 60);
-                table.setColumnWidth(4, 15, 15);
-                Iterator var6 = courses.iterator();
+            Table table = createTable();
+            CellStyle cellStyle = new CellStyle(CellStyle.HorizontalAlign.CENTER);
+            addCourseToTable(table, course, cellStyle);
+            System.out.println(table.render());
 
-                while(var6.hasNext()) {
-                    Course course = (Course)var6.next();
-                    if (course.getId().equals(fId)) {
-                        table.addCell(course.getId().toString());
-                        table.addCell(String.join(", ", course.getTitle()));
-                        table.addCell(String.join(", ", course.getInstructorName()));
-                        table.addCell(String.join(", ", course.getRequirement()));
-                        table.addCell(course.getStartDate());
-                        System.out.println(table.render());
-                        found = true;
-                        break;
-                    }
-                }
-
-                if (!found) {
-                    throw new CourseNotFoundException("[!] Course not found with id: " + fId);
-                }
-
-                return;
-            } catch (InputMismatchException var8) {
-                System.out.println("[!] Invalid input. Please enter a valid integer ID.");
-                scanner.nextLine();
-            }
+        } catch (InputMismatchException e) {
+            System.out.println("[!] Invalid input. Please enter a valid integer ID.");
+            scanner.nextLine();
         }
     }
 
+    @Override
     public void findCourseByTitle() throws CourseNotFoundException {
         List<Course> courses = CourseRepository.allCourses();
-        Scanner scanner = new Scanner(System.in);
 
-        while(true) {
-            while(true) {
-                System.out.print("[+] Input Title For Search: ");
-                String fTitle = scanner.nextLine().trim();
-                if (fTitle.isEmpty()) {
-                    System.out.println("[!] Title cannot be empty. Please enter a valid title.");
-                } else {
-                    if (!fTitle.matches(".*\\d.*")) {
-                        List<Course> filteredCourses = courses.stream().filter((coursex) -> {
-                            return Arrays.stream(coursex.getTitle()).anyMatch((title) -> {
-                                return title.equalsIgnoreCase(fTitle);
-                            });
-                        }).toList();
-                        if (filteredCourses.isEmpty()) {
-                            throw new CourseNotFoundException("[!] Course not found with title: " + fTitle);
-                        }
+        System.out.print("[+] Input Title For Search: ");
+        String fTitle = scanner.nextLine().trim();
 
-                        Table table = new Table(5, BorderStyle.UNICODE_BOX_DOUBLE_BORDER_WIDE, ShownBorders.ALL);
-                        table.addCell("ID");
-                        table.addCell("TITLE");
-                        table.addCell("INSTRUCTOR");
-                        table.addCell("REQUIREMENT");
-                        table.addCell("START DATE");
-                        table.setColumnWidth(0, 10, 30);
-                        table.setColumnWidth(1, 25, 60);
-                        table.setColumnWidth(2, 25, 60);
-                        table.setColumnWidth(3, 30, 60);
-                        table.setColumnWidth(4, 15, 15);
-                        Iterator var6 = filteredCourses.iterator();
+        if (fTitle.isEmpty()) {
+            System.out.println("[!] Title cannot be empty. Please enter a valid title.");
+        } else if (fTitle.matches(".*\\d.*")) {
+            System.out.println("[!] Invalid title. Please enter a valid text without numbers.");
+        } else {
+            List<Course> filteredCourses = courses.stream()
+                    .filter(course -> Arrays.stream(course.getTitle())
+                            .anyMatch(title -> title.equalsIgnoreCase(fTitle)))
+                    .toList();
 
-                        while(var6.hasNext()) {
-                            Course course = (Course)var6.next();
-                            table.addCell(course.getId().toString());
-                            table.addCell(String.join(", ", course.getTitle()));
-                            table.addCell(String.join(", ", course.getInstructorName()));
-                            table.addCell(String.join(", ", course.getRequirement()));
-                            table.addCell(course.getStartDate());
-                        }
-
-                        System.out.println(table.render());
-                        return;
-                    }
-
-                    System.out.println("[!] Invalid title. Please enter a valid text without numbers.");
-                }
+            if (filteredCourses.isEmpty()) {
+                throw new CourseNotFoundException("[!] Course not found with title: " + fTitle);
             }
+
+            Table table = createTable();
+            CellStyle cellStyle = new CellStyle(CellStyle.HorizontalAlign.CENTER);
+            for (Course course : filteredCourses) {
+                addCourseToTable(table, course, cellStyle);
+            }
+            System.out.println(table.render());
         }
     }
 
+    @Override
     public void removeCourseById() {
-        Scanner scanner = new Scanner(System.in);
-
-        while(true) {
+        while (true) {
             System.out.print("[+] Input ID of the course to delete: ");
             if (!scanner.hasNextInt()) {
                 System.out.println("[!] Invalid input. Please enter a valid course ID (a number).");
                 scanner.next();
-                if (!this.promptRetry(scanner)) {
+                if (!promptRetry()) {
                     break;
                 }
             } else {
                 int courseId = scanner.nextInt();
-
                 try {
                     CourseRepository.removeCourseById(courseId);
                     System.out.println("[-] Course with ID " + courseId + " has been successfully removed.");
                     break;
-                } catch (CourseNotFoundException var4) {
-                    System.out.println(var4.getMessage());
-                    if (!this.promptRetry(scanner)) {
+                } catch (CourseNotFoundException e) {
+                    System.out.println(e.getMessage());
+                    if (!promptRetry()) {
                         break;
                     }
                 }
             }
         }
-
     }
 
-    private boolean promptRetry(Scanner scanner) {
+    private boolean promptRetry() {
         System.out.print("[!] Do you want to try again? (yes/no): ");
         String response = scanner.next();
         return response.equalsIgnoreCase("yes") || response.equalsIgnoreCase("y");
+    }
+
+    private Table createTable() {
+        Table table = new Table(5, BorderStyle.UNICODE_BOX_DOUBLE_BORDER_WIDE, ShownBorders.ALL);
+        CellStyle cellStyle = new CellStyle(CellStyle.HorizontalAlign.CENTER);
+        table.addCell("ID", cellStyle);
+        table.addCell("TITLE", cellStyle);
+        table.addCell("INSTRUCTOR", cellStyle);
+        table.addCell("REQUIREMENT", cellStyle);
+        table.addCell("START DATE", cellStyle);
+        table.setColumnWidth(0, 10, 30);
+        table.setColumnWidth(1, 25, 60);
+        table.setColumnWidth(2, 25, 60);
+        table.setColumnWidth(3, 30, 60);
+        table.setColumnWidth(4, 25, 60);
+        return table;
+    }
+
+    private void addCourseToTable(Table table, Course course, CellStyle cellStyle) {
+        table.addCell(course.getId().toString(), cellStyle);
+        table.addCell(wrapWithBrackets(course.getTitle()), cellStyle);
+        table.addCell(wrapWithBrackets(course.getInstructorName()), cellStyle);
+        table.addCell(wrapWithBrackets(course.getRequirement()), cellStyle);
+        table.addCell(course.getStartDate(), cellStyle);
+    }
+
+    private String wrapWithBrackets(String[] array) {
+        return Arrays.stream(array)
+                .map(s -> "[" + s + "]")
+                .reduce((a, b) -> a + ", " + b)
+                .orElse("");
     }
 }

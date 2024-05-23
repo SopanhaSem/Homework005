@@ -9,8 +9,7 @@ public class Main {
     public static void main(String[] args) {
         while(true) {
             try {
-                int choice = View.menu();
-                switch (choice) {
+                switch (View.menu()) {
                     case 0:
                         System.exit(0);
                         break;
@@ -45,7 +44,7 @@ public class Main {
                         System.out.println("[!] Invalid option. Please try again.");
                 }
             } catch (Exception var6) {
-                System.out.println("An error occurred: " + var6.getMessage());
+                System.out.println("[!] Please Input Valid Option");
             }
         }
     }
